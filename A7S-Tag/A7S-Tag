@@ -1,0 +1,67 @@
+#!/bin/bash
+#	                                     _                             _   _____           
+#   	        _ __ ___ _ __ ___   ___ | |_ ___         ___ _   _ ___| |_|___ /_ __ ___  
+#       	   | '__/ _ \ '_ ` _ \ / _ \| __/ _ \      / __| | | / __| __| |_ \| '_ ` _ \ 
+#      		   | | |  __/ | | | | | (_) | ||  __/   _  \__ \ |_| \__ \ |_ ___) | | | | | |
+#       	   |_|  \___|_| |_| |_|\___/ \__\___|  (_) |___/\__, |___/\__|____/|_| |_| |_|  
+#                                                           |___/
+
+  ## Use the MP_ROOT as your target folder or the Folder Directly Before the MP4 Files.
+
+today=$(date +%y%m%d)
+echo "Today is $today, and you are using the A7S-Tag at your own risk!"
+
+reelInput=$(/Applications/cocoaDialog.app/Contents/MacOS/cocoaDialog\
+ inputbox --button1 "OK" --string-output\
+ --title "Enter the Reel ID" --label "Example: A023 or B005, etc... ")
+
+reelID=$(echo "$reelInput" | sed -e '1,1d;')
+
+if [ "$1" != "" ]; then
+     CARD="$1"
+else
+    CARD=$(/Applications/cocoaDialog.app/Contents/MacOS/cocoaDialog\
+     fileselect --select-only-directories --label "Select an A7S Folder, DO NOT SELECT THE MEDIA DIRECTLY!!!")
+fi
+
+parent=$(dirname "$CARD")
+mv "$CARD" "$parent"/"$reelID"_"$today"
+CARD="$parent"/"$reelID"_"$today"
+FOLDER=( "$CARD"/*.MP4 )
+if [ -e "${FOLDER[0]}" ]; then
+        for file in $(ls "$CARD"); do
+                    ext=${file##*.}
+                    newName=$(echo ${file%.*} | sed -e 's/[a-zA-Z]*/'$reelID'_C/')
+                    echo "Rename: $file to "$newName"_"$today"."$ext""
+                    mv "$CARD"/$file "$CARD"/"$newName"_"$today"."$ext"
+                done
+    else
+        FOLDER0=( "$CARD"/* )
+        if [ -e "${FOLDER0[0]}" ]; then
+                folder1="${FOLDER0[0]}"
+                FOLDER1=( "$folder1"/*.MP4 )
+                if [ -e "${FOLDER1[0]}" ]; then
+                        for file in $(ls "$folder1"); do
+                                ext=${file##*.}
+                                newName=$(echo ${file%.*} | sed -e 's/[a-zA-Z]*/'$reelID'_C/')
+                                echo "Rename: $file to "$newName"_"$today"."$ext""
+                                mv "$folder1"/$file "$folder1"/"$newName"_"$today"."$ext"
+                        done
+                        mv "$folder1" "$CARD"/"$reelID"_"$today"
+                    else
+                        folder2=$(basename "$folder1"/*)
+                        FOLDER2=( "$folder1"/"$folder2"/*.MP4 )
+                        if [ -e "${FOLDER2[0]}" ]; then
+                            mv "$folder1" "$CARD"/"$reelID"_"$today"
+                                    for file in $(ls "$CARD"/"$reelID"_"$today"/"$folder2"); do
+                                            ext=${file##*.}
+                                            newName=$(echo ${file%.*} | sed -e 's/[a-zA-Z]*/'$reelID'_C/')
+                                            echo "Rename: $file to "$newName"_"$today"."$ext""
+                                            mv "$CARD"/"$reelID"_"$today"/"$folder2"/$file "$CARD"/"$reelID"_"$today"/"$newName"_"$today"."$ext"
+                                    done
+            fi
+		fi
+	fi
+fi
+exit 0
+
